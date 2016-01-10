@@ -34,7 +34,7 @@ if not hasattr(__builtin__.property, "setter"):
 class Hoster(Base):
     __name__    = "Hoster"
     __type__    = "hoster"
-    __version__ = "0.51"
+    __version__ = "0.54"
     __status__  = "stable"
 
     __pattern__ = r'^unmatchable$'
@@ -140,7 +140,7 @@ class Hoster(Base):
 
         try:
             unfinished = any(fdata.get('status') == 3 for fid, fdata in pypack.getChildren().items()
-                             if fid is not self.pyfile.id)
+                             if fid != self.pyfile.id)
             if unfinished:
                 return
 
@@ -279,7 +279,7 @@ class Hoster(Base):
 
         self.pyfile.setStatus("downloading")
 
-        dl_folder   = self.pyload.config.get('general', 'download_folder')
+        dl_folder   = os.path.abspath(self.pyload.config.get('general', 'download_folder'))
         dl_dirname  = safejoin(dl_folder, self.pyfile.package().folder)
         dl_filename = safejoin(dl_dirname, dl_basename)
 
@@ -291,7 +291,7 @@ class Hoster(Base):
                 os.makedirs(dl_dir)
 
             except Exception, e:
-                self.fail(e)
+                self.fail(e.message)
 
         self.set_permissions(dl_dir)
 

@@ -38,7 +38,7 @@ except ImportError:
 class misc(object):
     __name__    = "misc"
     __type__    = "plugin"
-    __version__ = "0.18"
+    __version__ = "0.21"
     __status__  = "stable"
 
     __pattern__ = r'^unmatchable$'
@@ -406,7 +406,7 @@ def exists(path):
         return False
 
 
-def remove(self, path, trash=True):
+def remove(path, trash=True):
     path = encode(path)
 
     if not exists(path):
@@ -475,10 +475,13 @@ def truncate(name, length):
 def safepath(value):
     """
     Remove invalid characters and truncate the path if needed
+
+    @NOTE: Returns absolute path
     """
+    value = os.path.abspath(value)
     drive, filename = os.path.splitdrive(value)
     filename = os.path.join(os.sep, *map(safename, filename.split(os.sep)))
-    path = os.path.abspath(drive + filename)
+    path = drive + filename
 
     try:
         if os.name != "nt":
@@ -748,7 +751,7 @@ def parse_html_form(attr_str, html, input_names={}):
             #: Check input attributes
             for key, value in input_names.items():
                 if key in inputs:
-                    if isinstance(value, basestring) and inputs[key] is value:
+                    if isinstance(value, basestring) and inputs[key] == value:
                         continue
                     elif isinstance(value, tuple) and inputs[key] in value:
                         continue
