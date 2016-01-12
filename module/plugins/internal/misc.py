@@ -38,7 +38,7 @@ except ImportError:
 class misc(object):
     __name__    = "misc"
     __type__    = "plugin"
-    __version__ = "0.21"
+    __version__ = "0.23"
     __status__  = "stable"
 
     __pattern__ = r'^unmatchable$'
@@ -475,13 +475,14 @@ def truncate(name, length):
 def safepath(value):
     """
     Remove invalid characters and truncate the path if needed
-
-    @NOTE: Returns absolute path
     """
-    value = os.path.abspath(value)
+    if os.name == "nt":
+        unt, value = os.path.splitunc(value)
+    else:
+        unt = ""
     drive, filename = os.path.splitdrive(value)
-    filename = os.path.join(os.sep, *map(safename, filename.split(os.sep)))
-    path = drive + filename
+    filename = os.path.join(os.sep if os.path.isabs(filename) else "", *map(safename, filename.split(os.sep)))
+    path = unt + drive + filename
 
     try:
         if os.name != "nt":
@@ -493,11 +494,10 @@ def safepath(value):
 
         dirname, basename = os.path.split(filename)
         name, ext = os.path.splitext(basename)
-        path = drive + dirname + truncate(name, length) + ext
+        path = unt + drive + dirname + truncate(name, length) + ext
 
     finally:
         return path
-
 
 def safejoin(*args):
     """
