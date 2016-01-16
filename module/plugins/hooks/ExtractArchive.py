@@ -324,6 +324,7 @@ class ExtractArchive(Addon):
                             finally:
                                 pyfile.setProgress(100)
                                 thread.finishFile(pyfile)
+                                pyfile.initPlugin()  # Re-init the plugin here since it got deleted in the line before
 
                         except Exception, e:
                             self.log_error(name, e)
@@ -331,7 +332,7 @@ class ExtractArchive(Addon):
                             continue
 
                         #: Remove processed file and related multiparts from list
-                        files_ids = [(fname, fid, fout) for fname, fid, fout in files_ids \
+                        files_ids = [(fid, fname, fout) for fid, fname, fout in files_ids \
                                     if fname not in archive.chunks()]
                         self.log_debug("Extracted files: %s" % new_files)
 
@@ -339,13 +340,13 @@ class ExtractArchive(Addon):
                             self.set_permissions(file)
 
                         for filename in new_files:
-                            file = encode(fsjoin(os.path.dirname(archive.filename), filename))
+                            file = encode(filename)
                             if not exists(file):
                                 self.log_debug("New file %s does not exist" % filename)
                                 continue
 
                             if recursive and os.path.isfile(file):
-                                new_files_ids.append((filename, fid, os.path.dirname(filename)))  #: Append as new target
+                                new_files_ids.append((fid, filename, os.path.dirname(filename)))  #: Append as new target
 
                         self.manager.dispatchEvent("archive_extracted", pyfile, archive)
 
