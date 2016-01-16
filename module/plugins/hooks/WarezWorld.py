@@ -224,7 +224,13 @@ class WarezWorld(Addon):
         Request = requests.get(Release['ImdbUrl'], headers={'User-Agent': 'Mozilla/5.0'})
         ImdbPage = Soup(Request.text, 'html5lib')
 
-        spans = ImdbPage.findAll('span', {'itemprop': 'name'})
+        spans = ImdbPage.findAll(
+            'span',
+            {
+                'class': 'itemprop',
+                'itemprop': 'name'
+            }
+        )
         for span in spans:
             if span.parent.name == 'h1':
                 MovieName = span.text
