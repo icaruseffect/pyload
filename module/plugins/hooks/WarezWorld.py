@@ -232,7 +232,8 @@ class WarezWorld(Addon):
         # For the year it has to be done a tiny bit of BeautifulSoup magic as it sometimes can
         # be formatted as a link on IMDb and sometimes not
         try:
-            MovieYear = ImdbPage.find('span', {'id': 'titleYear'}).find(text=re.compile(r'\d{4}')).strip(u' ()\u2013')
+            MovieYear = ImdbPage.find('h1', class_='header').find('span', class_='nobr').find(
+                text=re.compile(r'\d{4}')).strip(u' ()\u2013')
         except:
             MovieYear = 0
             self.log_debug('...Could not parse movie year ({0})'.format(Release['ImdbUrl']))
