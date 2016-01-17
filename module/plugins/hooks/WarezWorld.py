@@ -2,7 +2,6 @@
 
 from datetime import datetime
 import StringIO
-import httplib
 import re
 import sys
 import traceback
@@ -19,20 +18,11 @@ from module.plugins.internal.Addon import Addon
 UNIX_EPOCH = timezone('UTC').localize(datetime(1970, 1, 1))
 
 
-def notifyPushover(**kwargs):
+def notify_pushover(**kwargs):
     requests.post('https://api.pushover.net/1/messages.json', data=kwargs)
 
 
-def replaceUmlauts(title):
-    title = title.replace(unichr(228), 'ae').replace(unichr(196), 'Ae')
-    title = title.replace(unichr(252), 'ue').replace(unichr(220), 'Ue')
-    title = title.replace(unichr(246), 'oe').replace(unichr(214), 'Oe')
-    title = title.replace(unichr(223), 'ss')
-    title = title.replace('&amp;', '&')
-    return title
-
-
-def getUnixTimestamp(String):
+def get_unix_timestamp(String):
     String = re.search(r'^.*(\d{2}.\d{2}.\d{4})(\d{1,2}):(\d{2}).*$', String)
     if String:
         String = String.group(1) + \
@@ -97,9 +87,7 @@ class WarezWorld(Addon):
             self.Statistics[Key] = 0
 
         try:
-#            Comment in again next line and delete the line after when finished testing!
             Request = requests.get('http://warez-world.org/kategorie/filme/', headers={'User-Agent': 'Mozilla/5.0'})
-#            Request = requests.get('http://warez-world.org/kategorie/filme/page/3/', headers={'User-Agent': 'Mozilla/5.0'})
             Page = Soup(Request.text, 'html5lib')
             Items = Page.findAll('li', class_='main-single')
             Releases = []
@@ -107,9 +95,12 @@ class WarezWorld(Addon):
             for Item in Items:
                 Releases.append({
                     'MovieName': Item.find('span', class_='main-rls').text,
-                    'ReleaseName': re.search(r'<br/>(.*)</span>', unicode(Item.find('span', class_='main-rls'))).group(1),
+                    'ReleaseName': re.search(
+                        r'<br/>(.*)</span>',
+                        unicode(Item.find('span', class_='main-rls'))
+                    ).group(1),
                     'ReleaseLink': unicode(Item.find('span', class_='main-rls').a['href']),
-                    'ReleaseDate': getUnixTimestamp(unicode(Item.find(class_='main-date').text))
+                    'ReleaseDate': get_unix_timestamp(unicode(Item.find(class_='main-date').text))
                 })
             self.log_info(u'{0} releases found'.format(len(Releases)))
 
@@ -122,19 +113,22 @@ class WarezWorld(Addon):
                 Release['MovieYear'] = 1900
                 Release['MovieRating'] = 0
                 Release['MovieGenres'] = []
-                if self.parseRelease(Release):
-                    self.downloadRelease(Release)
+                if self.parse_release(Release):
+                    self.download_release(Release)
 
             self.db.store('LastReleaseTimestamp', Releases[0]['ReleaseDate'])
             self.log_debug(u'Last parsed release timestamp is {0}'.format(Releases[0]['ReleaseDate']))
 
             self.Statistics['Total'] = sum(self.Statistics.itervalues())
-            self.log_info(u'Periodical run finished. Statistics: {0} total, {1} added, {2} skipped, {3} already processed'.format(
-                self.Statistics['Total'],
-                self.Statistics['Added'],
-                self.Statistics['Skipped'],
-                self.Statistics['AlreadyProcessed']
-            ))
+            self.log_info(
+                u'Periodical run finished. Statistics: {0} total, {1} added, {2} skipped, {3} already processed'
+                .format(
+                    self.Statistics['Total'],
+                    self.Statistics['Added'],
+                    self.Statistics['Skipped'],
+                    self.Statistics['AlreadyProcessed']
+                )
+            )
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             output = StringIO.StringIO()
@@ -145,7 +139,7 @@ class WarezWorld(Addon):
                 )
             else:
                 msg = '<b>Stacktrace</b>\n{0}'.format(output.getvalue())
-            notifyPushover(
+            notify_pushover(
                 token=self.config.get('pushoverAppToken'),
                 user=self.config.get('pushoverUserToken'),
                 title='Error in script \"WarezWorld.py\"',
@@ -155,7 +149,7 @@ class WarezWorld(Addon):
             )
             raise
 
-    def parseRelease(self, Release):
+    def parse_release(self, Release):
         if any([
             set(re.split(r'[\. ]', Release['ReleaseName'].lower())) & set(self.RejectReleaseTokens),
             not(self.config.get('quality').lower() in Release['ReleaseName'].lower())
@@ -182,7 +176,9 @@ class WarezWorld(Addon):
                             'http://warez-world.org/drop.php',
                             data={'option': DownloadLink.a['data-dl'], 'pid': Release['pid']}
                         )
-                        Release['DownloadLink'] = Soup(LinkList.text, 'html5lib').find('div', {'class': 'dll-list'}).text.splitlines()
+                        LinkList = Soup(LinkList.text, 'html5lib')
+                        LinkList = LinkList.find('div', {'class': 'dll-list'}).text.splitlines()
+                        Release['DownloadLink'] = LinkList
                     else:
                         Release['DownloadLink'] = DownloadLink.a['href']
                     break
@@ -194,7 +190,7 @@ class WarezWorld(Addon):
         ImdbUrl = re.search(r'(http://)?.*(imdb\.com/title/tt\d+)\D', unicode(ReleaseNfo))
         if ImdbUrl:
             Release['ImdbUrl'] = 'http://www.' + ImdbUrl.group(2)
-            self.addImdbData(Release)
+            self.add_imdb_data(Release)
         else:
             for Div in ReleasePage.findAll('div', class_='ui2'):
                 if Div.a and Div.a.string == 'IMDb-Seite':
@@ -203,7 +199,7 @@ class WarezWorld(Addon):
                     if ImdbPage.find('table', class_='findList'):
                         Release['ImdbUrl'] = 'http://www.imdb.com' + \
                             ImdbPage.find('td', class_='result_text').a['href']
-                        self.addImdbData(Release)
+                        self.add_imdb_data(Release)
                     else:
                         self.log_debug(u'...Could not obtain IMDb data for release...Send to link collector')
                         self.Statistics['Added'] += 1
@@ -218,7 +214,7 @@ class WarezWorld(Addon):
             self.Statistics['Skipped'] += 1
             return False
 
-    def addImdbData(self, Release):
+    def add_imdb_data(self, Release):
         self.log_debug(u'...Fetching IMDb data for release ({0})'.format(Release['ImdbUrl']))
 
         Request = requests.get(Release['ImdbUrl'], headers={'User-Agent': 'Mozilla/5.0'})
@@ -262,7 +258,7 @@ class WarezWorld(Addon):
         Release['MovieRating'] = MovieRating
         Release['MovieGenres'] = MovieGenres
 
-    def downloadRelease(self, Release):
+    def download_release(self, Release):
         Storage = self.db.retrieve(u'{0} ({1})'.format(Release['MovieName'], Release['MovieYear']))
 
         if Storage == '1':
@@ -272,22 +268,20 @@ class WarezWorld(Addon):
             Storage = u'{0} ({1})'.format(Release['MovieName'], Release['MovieYear'])
             if Release['MovieRating'] >= self.config.get('ratingQueue'):
                 self.pyload.api.addPackage(
-                    Storage + ' IMDb: ' + Release['MovieRating'],
-                    [Release['DownloadLink']], 1
+                    Storage + ' IMDb: ' + Release['MovieRating'], Release['DownloadLink'], 1
                 )
                 PushoverTitle = u'New movie added to queue'
                 self.log_info(u'New movie added to queue ({0})'.format(Storage))
             else:
                 self.pyload.api.addPackage(
-                    Storage + ' IMDb: ' + Release['MovieRating'],
-                    [Release['DownloadLink']], 0
+                    Storage + ' IMDb: ' + Release['MovieRating'], Release['DownloadLink'], 0
                 )
                 PushoverTitle = u'New movie added to link collector'
                 self.log_info(u'New movie added to link collector ({0})'.format(Storage))
 
             self.Statistics['Added'] += 1
 
-            notifyPushover(
+            notify_pushover(
                 token=self.config.get('pushoverAppToken').encode('utf-8'),
                 user=self.config.get('pushoverUserToken').encode('utf-8'),
                 title=PushoverTitle,
