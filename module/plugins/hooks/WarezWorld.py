@@ -37,6 +37,15 @@ def get_unix_timestamp(String):
     return UnixTimestamp
 
 
+def replaceUmlauts(title):
+    title = title.replace(unichr(228), 'ae').replace(unichr(196), 'Ae')
+    title = title.replace(unichr(252), 'ue').replace(unichr(220), 'Ue')
+    title = title.replace(unichr(246), 'oe').replace(unichr(214), 'Oe')
+    title = title.replace(unichr(223), 'ss')
+    title = title.replace('&amp;', '&')
+    return title
+
+
 class WarezWorld(Addon):
     __name__ = 'WarezWorld'
     __type__ = 'hook'
@@ -205,9 +214,12 @@ class WarezWorld(Addon):
                         self.Statistics['Added'] += 1
                     break
 
-        if all([Release['MovieYear'] >= self.config.get('minYear'),
-                Release['MovieRating'] >= self.config.get('ratingCollector'),
-                not(set(Release['MovieGenres']) & set(self.RejectGenres))]):
+        if all([
+            Release['MovieName'],
+            Release['MovieYear'] >= self.config.get('minYear'),
+            Release['MovieRating'] >= self.config.get('ratingCollector'),
+            not(set(Release['MovieGenres']) & set(self.RejectGenres))
+        ]):
             return True
         else:
             self.log_debug(u'...Skip release ({0})'.format('Movie too old, poor IMDb rating or unwanted genres'))
@@ -220,16 +232,19 @@ class WarezWorld(Addon):
         Request = requests.get(Release['ImdbUrl'], headers={'User-Agent': 'Mozilla/5.0'})
         ImdbPage = Soup(Request.text, 'html5lib')
 
-        spans = ImdbPage.findAll(
-            'span',
-            {
-                'class': 'itemprop',
-                'itemprop': 'name'
-            }
-        )
-        for span in spans:
-            if span.parent.name == 'h1':
-                MovieName = span.text
+        try:
+            spans = ImdbPage.findAll(
+                'span',
+                {
+                    'class': 'itemprop',
+                    'itemprop': 'name'
+                }
+            )
+            for span in spans:
+                if span.parent.name == 'h1':
+                    MovieName = replaceUmlauts(span.text)
+        except:
+            MovieName = ''
 
         # For the year it has to be done a tiny bit of BeautifulSoup magic as it sometimes can
         # be formatted as a link on IMDb and sometimes not
