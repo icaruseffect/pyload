@@ -232,7 +232,13 @@ class WarezWorld(Addon):
         Request = requests.get(Release['ImdbUrl'], headers={'User-Agent': 'Mozilla/5.0'})
         ImdbPage = Soup(Request.text, 'html5lib')
 
-        try:
+        redesign = 'redesign' in ImdbPage.find('div', {'id': 'root'})['class']
+
+        if redesign:
+            h1 = ImdbPage.find('h1', {'itemprop': 'name'})
+            MovieName = replaceUmlauts(h1.contents[0].strip(u'\xa0'))
+            MovieYear = h1.span.text.strip(u' ()\u2013')
+        else:
             spans = ImdbPage.findAll(
                 'span',
                 {
@@ -243,17 +249,12 @@ class WarezWorld(Addon):
             for span in spans:
                 if span.parent.name == 'h1':
                     MovieName = replaceUmlauts(span.text)
-        except:
-            MovieName = ''
-
-        # For the year it has to be done a tiny bit of BeautifulSoup magic as it sometimes can
-        # be formatted as a link on IMDb and sometimes not
-        try:
-            MovieYear = ImdbPage.find('h1', class_='header').find('span', class_='nobr').find(
-                text=re.compile(r'\d{4}')).strip(u' ()\u2013')
-        except:
-            MovieYear = 0
-            self.log_debug('...Could not parse movie year ({0})'.format(Release['ImdbUrl']))
+            try:
+                MovieYear = ImdbPage.find('h1', class_='header').find('span', class_='nobr').find(
+                    text=re.compile(r'\d{4}')).strip(u' ()\u2013')
+            except:
+                MovieYear = 0
+                self.log_debug(u'...Could not parse movie year ({0})'.format(Release['ImdbUrl']))
 
         try:
             MovieRating = ImdbPage.find('span', {'itemprop': 'ratingValue'}).text.replace(',', '.')
