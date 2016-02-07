@@ -237,7 +237,10 @@ class WarezWorld(Addon):
         if redesign:
             h1 = ImdbPage.find('h1', {'itemprop': 'name'})
             MovieName = replaceUmlauts(h1.contents[0].strip(u'\xa0'))
-            MovieYear = h1.span.text.strip(u' ()\u2013')
+            try:
+                MovieYear = h1.span.text.strip(u' ()\u2013')
+            except:
+                MovieYear = self.config.get('minYear')
         else:
             spans = ImdbPage.findAll(
                 'span',
@@ -253,7 +256,7 @@ class WarezWorld(Addon):
                 MovieYear = ImdbPage.find('h1', class_='header').find('span', class_='nobr').find(
                     text=re.compile(r'\d{4}')).strip(u' ()\u2013')
             except:
-                MovieYear = 0
+                MovieYear = self.config.get('minYear')
                 self.log_debug(u'...Could not parse movie year ({0})'.format(Release['ImdbUrl']))
 
         try:
