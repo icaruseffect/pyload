@@ -6,6 +6,7 @@ import re
 import sys
 import traceback
 import urllib
+import urllib2
 
 from bs4 import BeautifulSoup as Soup
 from pytz import timezone
@@ -69,6 +70,7 @@ class WarezWorld(Addon):
         ('soundNotification', ';none;alien;bike;bugle;cashregister;classical;climb;cosmic;echo;falling;gamelan;incoming;intermission;magic;mechanical;persistent;pianobar;pushover;siren;spacealarm;tugboat;updown', 'Use this sound for notifications pushed via Pushover (empty for default)', '')
     ]
 
+    UrlOpener = urllib2.build_opener()
     RejectGenres = []
     RejectReleaseTokens = []
     LastReleaseTimestamp = None
@@ -238,7 +240,10 @@ class WarezWorld(Addon):
         if redesign:
             h1 = ImdbPage.find('h1', {'itemprop': 'name'})
             MovieName = h1.contents[0].strip(u'\xa0')
-            MovieYear = h1.span.text.strip(u' ()\u2013')
+            try:
+                MovieYear = h1.span.text.strip(u' ()\u2013')
+            except:
+                MovieYear = self.config.get('minYear')
         else:
             spans = ImdbPage.findAll(
                 'span',
@@ -254,7 +259,7 @@ class WarezWorld(Addon):
                 MovieYear = ImdbPage.find('h1', class_='header').find('span', class_='nobr').find(
                     text=re.compile(r'\d{4}')).strip(u' ()\u2013')
             except:
-                MovieYear = 0
+                MovieYear = self.config.get('minYear')
                 self.log_debug(u'...Could not parse movie year ({0})'.format(Release['ImdbUrl']))
 
         try:
