@@ -6,7 +6,6 @@ import re
 import sys
 import traceback
 import urllib
-import urllib2
 
 from bs4 import BeautifulSoup as Soup
 from pytz import timezone
@@ -70,13 +69,15 @@ class WarezWorld(Addon):
         ('soundNotification', ';none;alien;bike;bugle;cashregister;classical;climb;cosmic;echo;falling;gamelan;incoming;intermission;magic;mechanical;persistent;pianobar;pushover;siren;spacealarm;tugboat;updown', 'Use this sound for notifications pushed via Pushover (empty for default)', '')
     ]
 
-    UrlOpener = urllib2.build_opener()
     RejectGenres = []
     RejectReleaseTokens = []
     LastReleaseTimestamp = None
-    # Initialize dictionary keys here to enable quick access on keys via augmented operators
-    # in later code without further code magic
-    Statistics = {'Total': 0, 'Added': 0, 'Skipped': 0, 'AlreadyProcessed': 0}
+    Statistics = {
+        'Total': 0,
+        'Added': 0,
+        'Skipped': 0,
+        'AlreadyProcessed': 0
+    }
 
     def __init__(self, *args, **kwargs):
         super(WarezWorld, self).__init__(*args, **kwargs)
@@ -236,7 +237,7 @@ class WarezWorld(Addon):
 
         if redesign:
             h1 = ImdbPage.find('h1', {'itemprop': 'name'})
-            MovieName = replaceUmlauts(h1.contents[0].strip(u'\xa0'))
+            MovieName = h1.contents[0].strip(u'\xa0')
             MovieYear = h1.span.text.strip(u' ()\u2013')
         else:
             spans = ImdbPage.findAll(
@@ -248,7 +249,7 @@ class WarezWorld(Addon):
             )
             for span in spans:
                 if span.parent.name == 'h1':
-                    MovieName = replaceUmlauts(span.text)
+                    MovieName = span.text
             try:
                 MovieYear = ImdbPage.find('h1', class_='header').find('span', class_='nobr').find(
                     text=re.compile(r'\d{4}')).strip(u' ()\u2013')
@@ -275,22 +276,22 @@ class WarezWorld(Addon):
         Release['MovieGenres'] = MovieGenres
 
     def download_release(self, Release):
-        Storage = self.db.retrieve(u'{0} ({1})'.format(Release['MovieName'], Release['MovieYear']))
+        storageTitle = self.db.retrieve(u'{0} ({1})'.format(Release['MovieName'], Release['MovieYear']))
 
-        if Storage == '1':
+        if storageTitle == '1':
             self.log_debug(u'Skip release ({0})'.format('already downloaded'))
             self.Statistics['Skipped'] += 1
         else:
-            Storage = u'{0} ({1})'.format(Release['MovieName'], Release['MovieYear'])
+            storageTitle = u'{0} ({1})'.format(Release['MovieName'], Release['MovieYear'])
             if Release['MovieRating'] >= self.config.get('ratingQueue'):
                 self.pyload.api.addPackage(
-                    Storage + ' IMDb: ' + Release['MovieRating'], Release['DownloadLink'], 1
+                    storageTitle + ' IMDb: ' + Release['MovieRating'], Release['DownloadLink'], 1
                 )
                 PushoverTitle = u'New movie added to queue'
                 self.log_info(u'New movie added to queue ({0})'.format(Storage))
             else:
                 self.pyload.api.addPackage(
-                    Storage + ' IMDb: ' + Release['MovieRating'], Release['DownloadLink'], 0
+                    storageTitle + ' IMDb: ' + Release['MovieRating'], Release['DownloadLink'], 0
                 )
                 PushoverTitle = u'New movie added to link collector'
                 self.log_info(u'New movie added to link collector ({0})'.format(Storage))
@@ -314,7 +315,7 @@ class WarezWorld(Addon):
                 html=1
             )
 
-            self.db.store(Storage, '1')
+            self.db.store(replaceUmlauts(storageTitle), '1')
 
 
 if __name__ == '__main__':
