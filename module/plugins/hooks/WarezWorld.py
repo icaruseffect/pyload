@@ -293,13 +293,13 @@ class WarezWorld(Addon):
                     storageTitle + ' IMDb: ' + Release['MovieRating'], Release['DownloadLink'], 1
                 )
                 PushoverTitle = u'New movie added to queue'
-                self.log_info(u'New movie added to queue ({0})'.format(Storage))
+                self.log_info(u'New movie added to queue ({0})'.format(storageTitle))
             else:
                 self.pyload.api.addPackage(
                     storageTitle + ' IMDb: ' + Release['MovieRating'], Release['DownloadLink'], 0
                 )
                 PushoverTitle = u'New movie added to link collector'
-                self.log_info(u'New movie added to link collector ({0})'.format(Storage))
+                self.log_info(u'New movie added to link collector ({0})'.format(storageTitle))
 
             self.Statistics['Added'] += 1
 
