@@ -18,7 +18,7 @@ class UpdateManager(Addon):
     __version__ = "1.10"
     __status__  = "testing"
 
-    __config__ = [("activated"    , "bool", "Activated"                                , True ),
+    __config__ = [("activated"    , "bool", "Activated"                                , False),
                   ("checkinterval", "int" , "Check interval in hours"                  , 6    ),
                   ("autorestart"  , "bool", "Auto-restart pyLoad when required"        , True ),
                   ("checkonstart" , "bool", "Check for updates on startup"             , True ),

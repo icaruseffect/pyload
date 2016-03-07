@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+<<<<<<< HEAD
 import os
 import re
 import urllib
@@ -37,6 +38,41 @@ class ReCaptcha(CaptchaService):
     __authors__     = [('Walter Purcaro', 'vuolter@gmail.com'   ),
                        ('zapp-brannigan', 'fuerst.reinje@web.de'),
                        ('Arno-Nymous'   , None                  )]
+=======
+from StringIO import StringIO
+import os
+import re
+import urlparse
+
+from bs4 import BeautifulSoup as Soup
+import requests
+
+from module.plugins.internal.CaptchaService import CaptchaService
+
+try:
+    from PIL import Image
+    from PIL import ImageDraw
+    from PIL import ImageFont
+except ImportError:
+    import Image
+    import ImageDraw
+    import ImageFont
+
+
+class ReCaptcha(CaptchaService):
+    __name__ = 'ReCaptcha'
+    __type__ = 'captcha'
+    __version__ = '0.22'
+    __status__ = 'testing'
+    __description__ = 'ReCaptcha captcha service plugin'
+    __license__ = 'GPLv3'
+    __authors__ = [
+        ('pyLoad Team', 'admin@pyload.org'),
+        ('Walter Purcaro', 'vuolter@gmail.com'),
+        ('zapp-brannigan', 'fuerst.reinje@web.de'),
+        ('Arno-Nymous', None)
+    ]
+>>>>>>> 0765e9f65c72c90f799a59ddb02af90a68c76912
 
 
     KEY_V1_PATTERN = r'(?:recaptcha(?:/api|\.net)/(?:challenge|noscript)\?k=|Recaptcha\.create\s*\(\s*["\'])([\w\-]+)'
@@ -125,16 +161,21 @@ class ReCaptcha(CaptchaService):
         return vers, language, jsh
 
 
+<<<<<<< HEAD
     def _prepare_image(self, image, challenge_msg):
         if no_pil:
             self.log_error(_("Missing PIL lib"), _("Please install python's PIL library"))
             self.fail(_("Missing PIL lib"))
 
         dummy_text = 'pk'
+=======
+    def prepare_image(self, image):
+>>>>>>> 0765e9f65c72c90f799a59ddb02af90a68c76912
         # This is just a string to calculate biggest height of a text, since usually
         # the letters 'p' and 'k' reach to the lower most respective higher most
         # points in a text font (see typography) and thus we can hereby calculate
         # the biggest text height of a given font
+<<<<<<< HEAD
 
         s = StringIO()
         s.write(image)
@@ -180,11 +221,54 @@ class ReCaptcha(CaptchaService):
                         tile_index_pos['y'] + (tile_index_size['height'] / 2) - (text_height / 2)
                     ),
                     index_number,
+=======
+        dummyText = 'pk'
+
+        fontName = 'arialbd'
+        s = StringIO()
+        s.write(image)
+        s.seek(0)
+        
+        img = Image.open(s)
+        draw = ImageDraw.Draw(img)
+        if os.name == 'nt':
+            font = ImageFont.truetype(fontName, 13)
+        else:
+            font = None
+
+        tileSize = {'width': img.size[0] / 3, 'height': img.size[1] / 3}
+        tileIndexSize = {'width': draw.textsize('0')[0], 'height': draw.textsize('0')[1]}
+
+        for i in range(3):
+            for j in range(3):
+                tileIndexPos = {
+                    'x': i * tileSize['width'] + (tileSize['width'] / 2) - (tileIndexSize['width'] / 2),
+                    'y': j * tileSize['height']
+                }
+                draw.rectangle(
+                    [
+                        tileIndexPos['x'],
+                        tileIndexPos['y'],
+                        tileIndexPos['x'] + tileIndexSize['width'],
+                        tileIndexPos['y'] + tileIndexSize['height']
+                    ],
+                    fill='white'
+                )
+                indexNumber = str(j * 3 + i + 1)
+                textWidth, textHeight = draw.textsize(indexNumber, font=font)
+                draw.text(
+                    (
+                        tileIndexPos['x'] + (tileIndexSize['width'] / 2) - (textWidth / 2),
+                        tileIndexPos['y'] + (tileIndexSize['height'] / 2) - (textHeight / 2)
+                    ),
+                    indexNumber,
+>>>>>>> 0765e9f65c72c90f799a59ddb02af90a68c76912
                     '#000',
                     font=font
                 )
 
         if os.name == 'nt':
+<<<<<<< HEAD
             font = ImageFont.truetype(font_name, 16)
 
         _sol = 0
@@ -205,10 +289,15 @@ class ReCaptcha(CaptchaService):
 
         message = challenge_msg + '\n(Type image numbers like "258")'
 
+=======
+            font = ImageFont.truetype(fontName, 16)
+        message = self.v2ChallengeMsg + '\n(Type image numbers like "258")'
+>>>>>>> 0765e9f65c72c90f799a59ddb02af90a68c76912
         # the text's real height is twice as big as returned by font.getsize() since we use
         # a newline character which indeed breaks the text but doesn't count as a second line
         # in font.getsize().
         if os.name == 'nt':
+<<<<<<< HEAD
             text_area_height = draw.multiline_textsize(message, font=font)[1]
 
         else:
@@ -228,10 +317,27 @@ class ReCaptcha(CaptchaService):
             for i in xrange(len(lines)):
                 draw.text((3, i * draw.textsize(dummy_text, font=font)[1] + margin), lines[i], fill='black', font=font)
 
+=======
+            textHeight = draw.multiline_textsize(message, font=font)[1]
+        else:
+            lines = message.split('\n')
+            textHeight = len(lines) * draw.textsize(dummyText, font=font)[1]
+        margin = 5
+        textHeight = textHeight + margin * 2  #  add some margin on top and bottom of text
+        img2 = Image.new('RGB', (img.size[0], img.size[1] + textHeight), 'white')
+        img2.paste(img, (0, textHeight))
+        draw = ImageDraw.Draw(img2)
+        if os.name == 'nt':
+            draw.text((3, margin), message, fill='black', font=font)
+        else:
+            for i in range(len(lines)):
+                draw.text((3, i * draw.textsize(dummyText)[1] + margin), lines[i], fill='black', font=font)
+>>>>>>> 0765e9f65c72c90f799a59ddb02af90a68c76912
         s.truncate(0)
         img2.save(s, format='JPEG')
         img = s.getvalue()
         s.close()
+<<<<<<< HEAD
 
         return img
 
@@ -284,3 +390,59 @@ class ReCaptcha(CaptchaService):
             self.fail(_("Recaptcha max retries exceeded"))
 
         return result, challenge
+=======
+        return img
+
+
+    def _challenge_v2(self, key, parent=None):
+        fallbackURL = 'http://www.google.com/recaptcha/api/fallback?k=' + key
+        session = requests.Session()
+
+        fallback = session.get(
+            fallbackURL,
+            headers={
+                'Referer': self.pyfile.url
+            }
+        )
+        fallback = Soup(fallback.text, 'html5lib')
+
+        while True:
+            c = fallback.find('input', {'name': 'c', 'type': 'hidden'})['value']
+
+            try:
+                challengeMessage = fallback.find('label', {'class': 'fbc-imageselect-message-text'}).text
+            except:
+                challengeMessage = fallback.find('div', {'class': 'fbc-imageselect-message-error'}).text
+            self.v2ChallengeMsg = challengeMessage
+
+            imageURL = 'http://www.google.com' + fallback.find('img', {'class': 'fbc-imageselect-payload'})['src']
+            img = self.load(
+                imageURL,
+                req=self.pyfile.plugin.req,
+                get={},
+                post={},
+                ref=False,
+                cookies=True,
+                decode=False
+            )
+            img = self.prepare_image(img)
+            response = self.decrypt_image(img)
+
+            a = {'c': c}
+            b = {'response': [int(k) - 1 for k in response if k.isdigit()]}
+            d = dict(a, **b)
+            fallback = session.post(
+                fallbackURL,
+                headers={'Referer': fallbackURL},
+                data=d
+            )
+
+            fallback = Soup(fallback.text, 'html5lib')
+
+            recaptchaTokenTextarea = fallback.find('div', {'class': 'fbc-verification-token'})
+            if recaptchaTokenTextarea:
+                recaptchaVerificationToken = recaptchaTokenTextarea.textarea.text
+                break
+
+        return recaptchaVerificationToken
+>>>>>>> 0765e9f65c72c90f799a59ddb02af90a68c76912

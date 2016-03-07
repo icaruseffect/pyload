@@ -17,12 +17,12 @@
     @author: mkaay
 """
 
+from threading import RLock
+from time import sleep, time
+
 from module.PullEvents import UpdateEvent
 from module.utils import formatSize, lock
 
-from time import sleep, time
-
-from threading import RLock
 
 statusMap = {
     "finished":    0,
@@ -144,7 +144,7 @@ class PyFile(object):
 
         if hasattr(self, "plugin") and self.plugin:
             self.plugin.clean()
-            del self.plugin
+            self.plugin = None
 
         self.m.releaseLink(self.id)
 
